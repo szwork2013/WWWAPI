@@ -1,57 +1,34 @@
 var express = require('express');
 var http = require('http');
 var path = require('path');
+var favicon = require('serve-favicon');
 var bodyParser = require('body-parser');
-var cors = require('cors');
+var dustjs = require('adaro');
 
 // EXPRESS
 
-// Init 
+// init 
 var app = express();
-var port = process.env.PORT || '4000';
+var port = process.env.PORT || '3000';
 app.set('port', port);
 
-// Route Init
+// routes
+var routes = require('./routes/index');
 var admin = require('./routes/admin');
-var auth = require('./routes/auth');
 
-// Prep Req Object
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.engine('dust', dustjs.dust());
+app.set('view engine', 'dust');
+
+
+app.use(favicon(__dirname + '/public/favicon.ico'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Remove Express Header and Etag 
-app.disable('etag');
-app.disable('x-powered-by');
-
-// // CORS Hack
-// app.use(function(req, res, next) {
-//   res.header("Access-Control-Allow-Origin", "*");
-//   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//   next();
-// });
-app.use(cors());
-
-
-// Attach App Name and Version
-app.use(function (req, res, next) {
-    res.set('X-HD-Server', 'API');
-    res.set('X-HD-Version', '0.0.1');
-    next();
-});
-
-// Monitoring Endpoint
-app.use('/status', function (req, res, next) {
-    res.send('OK');
-});
-
-// Route Use
-app.use('/1/admin', admin);
-app.use('/1/auth', auth);
-
-//Redirect To WWW Server
-app.use('/',function(req, res, next){
-    res.redirect(301, 'http://www.quickmeme.com/random');
-});
+app.use('/', routes);
+app.use('/admin', admin);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -60,8 +37,7 @@ app.use(function(req, res, next) {
     next(err);
 });
 
-
-//ERROR HANDLERS
+// ERROR HANDLERS
 
 // development error handler
 // will print stacktrace
@@ -91,7 +67,7 @@ else if (app.get('env') === 'production') {
 
 // SERVER 
 
-// Server Init
+// server init
 var server = http.createServer(app);
 server.listen(port);
 server.on('error', onError);
